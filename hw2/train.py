@@ -15,7 +15,7 @@ def trainDQN():
     cfg.max_epsilon = 0.10
     cfg.max_episodes = 100000
     cfg.print_interval = 100
-    cfg.learning_start = 200
+    cfg.learning_start = 100
     cfg.learning_freq = 1
     cfg.test_freq = 2000
     cfg.test_episodes = 100
