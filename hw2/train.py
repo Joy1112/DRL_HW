@@ -100,3 +100,7 @@ def trainDQN():
             print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
             print_and_log('***********************************************', logger)
     env.close()
+
+
+if __name__ == '__main__':
+    trainDQN()
