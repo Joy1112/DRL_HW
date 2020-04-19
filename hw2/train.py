@@ -9,7 +9,7 @@ from create_logger import create_logger, print_and_log
 
 
 def trainDQN():
-    cfg = edict
+    cfg = edict()
     cfg.device = 'cuda'
     cfg.min_epsilon = 0.01
     cfg.max_epsilon = 0.10
