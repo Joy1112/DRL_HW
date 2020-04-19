@@ -80,8 +80,8 @@ def trainDQN():
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print_and_log("episode: {}, avg score: {:.2f}, loss: {:.2f}, buffer size: {}, epsilon:{:.2f}%".format(
-                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100), logger)
+            print("episode: {}, avg score: {:.2f}, loss: {:.2f}, buffer size: {}, epsilon:{:.2f}%".format(
+                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100))
             score = 0.0
 
         if i_episode % cfg.test_freq == 0 and i_episode > 0:
