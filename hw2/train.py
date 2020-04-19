@@ -27,7 +27,9 @@ def trainDQN():
     logger, final_output_path = create_logger(root_output_path, cfg, 'DQN')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
-    print_and_log('called with config {}'.format(cfg), logger)
+    print_and_log('******************Called with config******************', logger)
+    print_and_log(cfg, logger)
+    print_and_log('******************************************************', logger)
     env = football_env.create_environment(env_name="academy_empty_goal",
                                           representation='simple115',
                                           number_of_left_players_agent_controls=1,
