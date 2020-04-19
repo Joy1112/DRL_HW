@@ -5,7 +5,7 @@ from easydict import EasyDict as edict
 from torch.utils.tensorboard import SummaryWriter
 
 from dqn import DQN
-from create_logger import create_logger, print_and_log
+from create_logger import create_logger, print_and_log, print_and_write
 
 
 def trainDQN():
@@ -24,12 +24,13 @@ def trainDQN():
     root_output_path = os.path.join(cur_dir, 'output')
     if not os.path.exists(root_output_path):
         os.mkdir(root_output_path)
-    logger, final_output_path = create_logger(root_output_path, cfg, 'DQN')
+    logger_path, final_output_path = create_logger(root_output_path, cfg, 'DQN')
+    logger = open(logger_path, 'w')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
-    print_and_log('******************Called with config******************', logger)
-    print_and_log(cfg, logger)
-    print_and_log('******************************************************', logger)
+    print_and_write('******************Called with config******************', logger)
+    print_and_write(cfg, logger)
+    print_and_write('******************************************************', logger)
     env = football_env.create_environment(env_name="academy_empty_goal",
                                           representation='simple115',
                                           number_of_left_players_agent_controls=1,
@@ -80,8 +81,8 @@ def trainDQN():
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print("episode: {}, avg score: {:.2f}, loss: {:.2f}, buffer size: {}, epsilon:{:.2f}%".format(
-                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100))
+            print_and_write("episode: {}, avg score: {:.2f}, loss: {:.2f}, buffer size: {}, epsilon:{:.2f}%".format(
+                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100), logger)
             score = 0.0
 
         if i_episode % cfg.test_freq == 0 and i_episode > 0:
@@ -96,9 +97,9 @@ def trainDQN():
 
                     test_score += reward
                     obs = next_obs
-            print_and_log('******************Test result******************', logger)
-            print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
-            print_and_log('***********************************************', logger)
+            print_and_write('******************Test result******************', logger)
+            print_and_write("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_write('***********************************************', logger)
     env.close()
 
 

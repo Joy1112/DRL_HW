@@ -17,16 +17,25 @@ def create_logger(root_output_path, config, model):
     if not os.path.exists(final_output_path):
         os.makedirs(final_output_path)
 
-    log_file = '{}.log'.format(time.strftime('%Y-%m-%d-%H-%M'))
-    head = '%(asctime)-15s %(message)s'
-    logging.basicConfig(filename=os.path.join(final_output_path, log_file), format=head)
-    logger = logging.getLogger('2')
-    logger.setLevel(logging.INFO)
+    file_name = '{}.log'.format(time.strftime('%Y-%m-%d-%H-%M'))
+    logger_path = os.path.join(final_output_path, file_name)
+    # head = '%(asctime)-15s %(message)s'
+    # logging.basicConfig(filename=os.path.join(final_output_path, log_file), format=head)
+    # logger = logging.getLogger('2')
+    # logger.setLevel(logging.INFO)
 
-    return logger, final_output_path
+    # return logger, final_output_path
+    return logger_path, final_output_path
 
 
 def print_and_log(string, logger):
     print(string)
     if logger:
         logger.info(string)
+
+
+def print_and_write(string, file=None):
+    print(string)
+    if file:
+        file.write_lines(string)
+        file.write_lines('\n')
