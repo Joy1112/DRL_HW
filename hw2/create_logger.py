@@ -20,7 +20,7 @@ def create_logger(root_output_path, config, model):
     log_file = '{}_{}.log'.format(model_name, time.strftime('%Y-%m-%d-%H-%M'))
     head = '%(asctime)-15s %(message)s'
     logging.basicConfig(filename=os.path.join(final_output_path, log_file), format=head)
-    logger = logging.getLogger()
+    logger = logging.getLogger(2)
     logger.setLevel(logging.INFO)
 
     return logger, final_output_path
