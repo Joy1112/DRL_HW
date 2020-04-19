@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import gfootball.env as football_env
+from easydict import EasyDict as edict
 from torch.utils.tensorboard import SummaryWriter
 
 from dqn import DQN
@@ -8,16 +9,16 @@ from create_logger import create_logger, print_and_log
 
 
 def trainDQN():
-    cfg = {}
-    cfg['device'] = 'cuda'
-    cfg['min_epsilon'] = 0.01
-    cfg['max_epsilon'] = 0.10
-    cfg['max_episodes'] = 100000
-    cfg['print_interval'] = 100
-    cfg['learning_start'] = 5
-    cfg['learning_freq'] = 1
-    cfg['test_freq'] = 2000
-    cfg['test_episodes'] = 100
+    cfg = edict
+    cfg.device = 'cuda'
+    cfg.min_epsilon = 0.01
+    cfg.max_epsilon = 0.10
+    cfg.max_episodes = 100000
+    cfg.print_interval = 100
+    cfg.learning_start = 5
+    cfg.learning_freq = 1
+    cfg.test_freq = 2000
+    cfg.test_episodes = 100
 
     cur_dir = os.path.abspath(os.curdir)
     root_output_path = os.path.join(cur_dir, 'output')
