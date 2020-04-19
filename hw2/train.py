@@ -23,7 +23,7 @@ def trainDQN():
     root_output_path = os.path.join(cur_dir, 'output')
     if not os.path.exists(root_output_path):
         os.mkdir(root_output_path)
-    final_output_path, logger = create_logger(root_output_path, cfg, 'DQN')
+    logger, final_output_path = create_logger(root_output_path, cfg, 'DQN')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
     print_and_log('called with config {}'.format(cfg), logger)
