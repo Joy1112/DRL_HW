@@ -15,7 +15,7 @@ def trainDQN():
     cfg.max_epsilon = 0.10
     cfg.max_episodes = 100000
     cfg.print_interval = 100
-    cfg.learning_start = 5
+    cfg.learning_start = 200
     cfg.learning_freq = 1
     cfg.test_freq = 2000
     cfg.test_episodes = 100
@@ -81,8 +81,8 @@ def trainDQN():
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print_and_write("episode: {}, avg score: {:.2f}, loss: {:.5f}, buffer size: {}, epsilon:{:.2f}%".format(
-                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100), logger)
+            print_and_write("episode: {}, training steps: {}, avg score: {:.2f}, loss: {:.5f}, buffer size: {}, epsilon:{:.2f}%".format(
+                i_episode, training_steps, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100), logger)
             score = 0.0
 
         if i_episode % cfg.test_freq == 0 and i_episode > 0:
