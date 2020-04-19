@@ -37,5 +37,5 @@ def print_and_log(string, logger):
 def print_and_write(string, file=None):
     print(string)
     if file:
-        file.write_lines(string)
-        file.write_lines('\n')
+        file.writelines(string)
+        file.writelines('\n')
