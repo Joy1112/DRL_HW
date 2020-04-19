@@ -9,23 +9,24 @@ from create_logger import create_logger, print_and_log
 
 def trainDQN():
     cfg = {}
-    cfg['device'] = 'cpu'
+    cfg['device'] = 'cuda'
     cfg['min_epsilon'] = 0.01
-    cfg['max_epsilon'] = 0.08
-    cfg['max_episodes'] = 10000
-    cfg['print_interval'] = 20
+    cfg['max_epsilon'] = 0.10
+    cfg['max_episodes'] = 100000
+    cfg['print_interval'] = 100
     cfg['learning_start'] = 5
     cfg['learning_freq'] = 1
-    cfg['test_freq'] = 100
-    cfg['test_episodes'] = 10
+    cfg['test_freq'] = 2000
+    cfg['test_episodes'] = 100
 
     cur_dir = os.path.abspath(os.curdir)
     root_output_path = os.path.join(cur_dir, 'output')
     if not os.path.exists(root_output_path):
         os.mkdir(root_output_path)
-    final_output_path = create_logger(root_output_path, )
+    final_output_path, logger = create_logger(root_output_path, cfg, 'DQN')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
+    print_and_log('called with config {}'.format(cfg), logger)
     env = football_env.create_environment(env_name="academy_empty_goal",
                                           representation='simple115',
                                           number_of_left_players_agent_controls=1,
@@ -39,7 +40,7 @@ def trainDQN():
                 gamma=0.98,
                 buffer_size=100000,
                 batch_size=32,
-                learning_rate=0.0005,
+                learning_rate=0.0003,
                 update_times=5,
                 target_q_update_freq=50,
                 input_type='vector',
@@ -50,7 +51,7 @@ def trainDQN():
     score = 0.0
     training_steps = 0
     for i_episode in range(cfg.max_episodes):
-        epsilon = max(cfg.min_epsilon, cfg.max_epsilon - 0.01 * (i_episode / 200))
+        epsilon = max(cfg.min_epsilon, cfg.max_epsilon - 0.01 * (i_episode / 6000))
         obs = env.reset()
         steps = 0
         epi_reward = 0.0
@@ -76,8 +77,8 @@ def trainDQN():
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print("episode: {}, avg score: {:.2f}, loss: {:.2f}, buffer size: {}, epsilon:{:.2f}%".format(
-                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100))
+            print_and_log("episode: {}, avg score: {:.2f}, loss: {:.2f}, buffer size: {}, epsilon:{:.2f}%".format(
+                i_episode, score / cfg.print_interval, epi_loss, model.memory.size(), epsilon * 100), logger)
             score = 0.0
 
         if i_episode % cfg.test_freq == 0 and i_episode > 0:
@@ -92,7 +93,7 @@ def trainDQN():
 
                     test_score += reward
                     obs = next_obs
-            print('******************Test result******************')
-            print("avg score: {:.2f}".format(test_score / cfg.test_episodes))
-            print('***********************************************')
+            print_and_log('******************Test result******************', logger)
+            print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_log('***********************************************', logger)
     env.close()
