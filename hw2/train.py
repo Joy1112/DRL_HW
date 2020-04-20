@@ -1,21 +1,20 @@
 import os
 import numpy as np
-# import gym
 import gfootball.env as football_env
 from easydict import EasyDict as edict
 from torch.utils.tensorboard import SummaryWriter
 
-from dqn import DQN, DoubleDQN
+from dqn import DQN, DoubleDQN, DuelingDQN
 from create_logger import create_logger, print_and_log, print_and_write
 
 
 def train():
     cfg = edict()
     cfg.env = 'academy_empty_goal'      # 'academy_empty_goal' or 'academy_3_vs_1_with_keeper'
-    cfg.model = 'DoubleDQN'             # 'DQN' or 'DoubleDQN' or 'DuelingDQN'
+    cfg.model = 'DuelingDQN'             # 'DQN' or 'DoubleDQN' or 'DuelingDQN'
 
     # common config
-    cfg.device = 'cuda:0'
+    cfg.device = 'cpu'
     cfg.min_epsilon = 0.01
     cfg.max_epsilon = 0.10
     cfg.print_interval = 100
@@ -65,10 +64,8 @@ def train():
                                           write_full_episode_dumps=False,
                                           render=False)
 
-    # env = gym.make('CartPole-v1')
-
     if cfg.model == 'DQN':
-        model = DQN(num_actions=19,
+        model = DQN(num_actions=env.action_space.n,
                     gamma=cfg.gamma,
                     buffer_size=cfg.buffer_size,
                     batch_size=cfg.batch_size,
@@ -76,11 +73,11 @@ def train():
                     update_times=cfg.update_times,
                     target_q_update_freq=cfg.target_q_update_freq,
                     input_type='vector',
-                    input_feature=115,
+                    input_feature=env.observation_space.shape[0],
                     random_action=True,
                     device=cfg.device)
     elif cfg.model == 'DoubleDQN':
-        model = DoubleDQN(num_actions=2,
+        model = DoubleDQN(num_actions=env.action_space.n,
                           gamma=cfg.gamma,
                           buffer_size=cfg.buffer_size,
                           batch_size=cfg.batch_size,
@@ -88,11 +85,21 @@ def train():
                           update_times=cfg.update_times,
                           target_q_update_freq=cfg.target_q_update_freq,
                           input_type='vector',
-                          input_feature=4,
+                          input_feature=env.observation_space.shape[0],
                           random_action=True,
                           device=cfg.device)
     elif cfg.model == 'DuelingDQN':
-        pass
+        model = DuelingDQN(num_actions=env.action_space.n,
+                           gamma=cfg.gamma,
+                           buffer_size=cfg.buffer_size,
+                           batch_size=cfg.batch_size,
+                           learning_rate=cfg.learning_rate,
+                           update_times=cfg.update_times,
+                           target_q_update_freq=cfg.target_q_update_freq,
+                           input_type='vector',
+                           input_feature=env.observation_space.shape[0],
+                           random_action=True,
+                           device=cfg.device)
 
     score = 0.0
     training_steps = 0

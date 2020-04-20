@@ -15,29 +15,44 @@ class Qnet(nn.Module):
                  num_actions,
                  input_type='vector',
                  input_feature=None,
-                 input_img_size=None):
+                 input_img_size=None,
+                 dueling=False):
         super(Qnet, self).__init__()
         self.num_actions = num_actions
         self.input_type = input_type
         self.input_feature = input_feature
         self.input_img_size = input_img_size
+        self.dueling = dueling
 
         self.initLayers()
 
     def initLayers(self):
         if self.input_type == 'vector':
-            self.fc1 = nn.Linear(self.input_feature, 256)
-            # self.fc2 = nn.Linear(256, 64)
-            self.fc3 = nn.Linear(256, self.num_actions)
+            if self.dueling:
+                self.fc_adv = nn.Sequential(
+                    nn.Linear(self.input_feature, 256),
+                    nn.ReLU(),
+                    nn.Linear(256, self.num_actions))
+                self.fc_val = nn.Sequential(
+                    nn.Linear(self.input_feature, 256),
+                    nn.ReLU(),
+                    nn.Linear(256, 1))
+            else:
+                self.fc = nn.Sequential(
+                    nn.Linear(self.input_feature, 256),
+                    nn.ReLU(),
+                    nn.Linear(256, self.num_actions))
         elif self.input_type == 'image':
             pass
 
     def forward(self, x):
         if self.input_type == 'vector':
-            x = F.relu(self.fc1(x))
-            # x = F.relu(self.fc2(x))
-
-            return self.fc3(x)
+            if self.dueling:
+                adv = self.fc_adv(x)
+                val = self.fc_val(x)
+                return val + (adv - adv.mean(dim=1, keepdim=True))
+            else:
+                return self.fc(x)
         elif self.input_type == 'image':
             return None
 
@@ -74,19 +89,22 @@ class DQN():
 
         self.num_params_update = 0
 
-        self.q = Qnet(self.num_actions, self.input_type, self.input_feature, self.input_img_size).to(self.device)
-        self.q_target = Qnet(self.num_actions, self.input_type, self.input_feature, self.input_img_size).to(self.device)
-        self.q_target.load_state_dict(self.q.state_dict())
+        self.create_nets()
 
         self.memory = ReplayBuffer(self.buffer_size)
 
         self.optimizer = optim.Adam(self.q.parameters(), lr=self.learning_rate)
 
+    def create_nets(self):
+        self.q = Qnet(self.num_actions, self.input_type, self.input_feature, self.input_img_size).to(self.device)
+        self.q_target = Qnet(self.num_actions, self.input_type, self.input_feature, self.input_img_size).to(self.device)
+        self.q_target.load_state_dict(self.q.state_dict())
+
     def sampleAction(self, obs, epsilon=None):
         if self.random_action:
             assert epsilon is not None
 
-        obs = torch.from_numpy(obs).float()
+        obs = torch.from_numpy(obs).float().unsqueeze(0)
         q_out = self.q(obs.to(self.device))
         random_digit = random.random()
         action = q_out.argmax().item() if random_digit >= epsilon else random.randint(0, self.num_actions - 1)
@@ -141,8 +159,8 @@ class DoubleDQN(DQN):
                  prioritized=False,
                  random_action=False,
                  device='cpu'):
-        DQN.__init__(self, num_actions, gamma, buffer_size, batch_size, learning_rate, 
-                     update_times, target_q_update_freq, input_type, input_feature, 
+        DQN.__init__(self, num_actions, gamma, buffer_size, batch_size, learning_rate,
+                     update_times, target_q_update_freq, input_type, input_feature,
                      input_img_size, prioritized, random_action, device)
 
     def calc_loss(self):
@@ -162,3 +180,28 @@ class DoubleDQN(DQN):
         loss = F.smooth_l1_loss(q_values, expected_q_values)
 
         return loss
+
+
+class DuelingDQN(DQN):
+    def __init__(self,
+                 num_actions,
+                 gamma,
+                 buffer_size,
+                 batch_size,
+                 learning_rate,
+                 update_times,
+                 target_q_update_freq,
+                 input_type='vector',
+                 input_feature=None,
+                 input_img_size=None,
+                 prioritized=False,
+                 random_action=False,
+                 device='cpu'):
+        DQN.__init__(self, num_actions, gamma, buffer_size, batch_size, learning_rate,
+                     update_times, target_q_update_freq, input_type, input_feature,
+                     input_img_size, prioritized, random_action, device)
+
+    def create_nets(self):
+        self.q = Qnet(self.num_actions, self.input_type, self.input_feature, self.input_img_size, dueling=True).to(self.device)
+        self.q_target = Qnet(self.num_actions, self.input_type, self.input_feature, self.input_img_size, dueling=True).to(self.device)
+        self.q_target.load_state_dict(self.q.state_dict())
