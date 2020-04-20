@@ -3,21 +3,21 @@ import logging
 import time
 
 
-def create_logger(root_output_path, config, model, env):
+def create_logger(root_output_path, config):
     # set up logger
     if not os.path.exists(root_output_path):
         os.makedirs(root_output_path)
     assert os.path.exists(root_output_path), '{} does not exist'.format(root_output_path)
 
-    model_name = 'model_' + model
+    model_name = 'model_' + config.model
     final_output_path = os.path.join(root_output_path, model_name)
     if not os.path.exists(final_output_path):
         os.makedirs(final_output_path)
-    env_name = 'env_' + env
+    env_name = 'env_' + config.env
     final_output_path = os.path.join(final_output_path, env_name)
     if not os.path.exists(final_output_path):
         os.makedirs(final_output_path)
-        
+
     final_output_path = os.path.join(final_output_path, time.strftime('%Y-%m-%d-%H-%M'))
     if not os.path.exists(final_output_path):
         os.makedirs(final_output_path)
