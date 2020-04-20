@@ -92,22 +92,27 @@ class DQN():
         action = q_out.argmax().item() if random_digit >= epsilon else random.randint(0, self.num_actions - 1)
         return action
 
+    def calc_loss(self):
+        state_batch, action_batch, reward_batch, next_state_batch, done_mask_batch = self.memory.sample(self.batch_size)
+
+        state_batch = state_batch.to(self.device)
+        action_batch = action_batch.to(self.device)
+        reward_batch = reward_batch.to(self.device)
+        next_state_batch = next_state_batch.to(self.device)
+        done_mask_batch = done_mask_batch.to(self.device)
+
+        q_out = self.q(state_batch)
+        q_values = q_out.gather(1, action_batch)
+        next_s_max_q = self.q_target(next_state_batch).detach().max(1)[0].unsqueeze(1)
+        expected_q_values = reward_batch + self.gamma * next_s_max_q * done_mask_batch
+        loss = F.smooth_l1_loss(q_values, expected_q_values)
+
+        return loss
+
     def learn(self):
         episode_loss = 0.0
         for i in range(self.update_times):
-            state_batch, action_batch, reward_batch, next_state_batch, done_mask_batch = self.memory.sample(self.batch_size)
-
-            state_batch = state_batch.to(self.device)
-            action_batch = action_batch.to(self.device)
-            reward_batch = reward_batch.to(self.device)
-            next_state_batch = next_state_batch.to(self.device)
-            done_mask_batch = done_mask_batch.to(self.device)
-
-            q_out = self.q(state_batch)
-            q_values = q_out.gather(1, action_batch)
-            next_s_max_q = self.q_target(next_state_batch).detach().max(1)[0].unsqueeze(1)
-            expected_q_values = reward_batch + self.gamma * next_s_max_q * done_mask_batch
-            loss = F.smooth_l1_loss(q_values, expected_q_values)
+            loss = self.calc_loss()
             episode_loss += loss
 
             self.optimizer.zero_grad()
@@ -119,3 +124,41 @@ class DQN():
                 self.q_target.load_state_dict(self.q.state_dict())
 
         return episode_loss / self.update_times
+
+
+class DoubleDQN(DQN):
+    def __init__(self,
+                 num_actions,
+                 gamma,
+                 buffer_size,
+                 batch_size,
+                 learning_rate,
+                 update_times,
+                 target_q_update_freq,
+                 input_type='vector',
+                 input_feature=None,
+                 input_img_size=None,
+                 prioritized=False,
+                 random_action=False,
+                 device='cpu'):
+        DQN.__init__(self, num_actions, gamma, buffer_size, batch_size, learning_rate, 
+                     update_times, target_q_update_freq, input_type, input_feature, 
+                     input_img_size, prioritized, random_action, device)
+
+    def calc_loss(self):
+        state_batch, action_batch, reward_batch, next_state_batch, done_mask_batch = self.memory.sample(self.batch_size)
+
+        state_batch = state_batch.to(self.device)
+        action_batch = action_batch.to(self.device)
+        reward_batch = reward_batch.to(self.device)
+        next_state_batch = next_state_batch.to(self.device)
+        done_mask_batch = done_mask_batch.to(self.device)
+
+        q_out = self.q(state_batch)
+        q_values = q_out.gather(1, action_batch)
+        next_s_actions = self.q(next_state_batch).detach().argmax(axis=1)
+        next_s_max_q = self.q_target(next_state_batch).gather(1, next_s_actions.unsqueeze(-1))
+        expected_q_values = reward_batch + self.gamma * next_s_max_q * done_mask_batch
+        loss = F.smooth_l1_loss(q_values, expected_q_values)
+
+        return loss
