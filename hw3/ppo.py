@@ -140,7 +140,7 @@ class PPO():
         for i in range(self.update_times):
             td_target = r + self.gamma * self.actor_critic.getValue(next_s) * done_mask
             delta = td_target - self.actor_critic.getValue(s)
-            delta = delta.detach().numpy()
+            delta = delta.detach().cpu().numpy()
 
             adv_lst = []
             adv = 0.0
