@@ -59,7 +59,7 @@ def trainDDPG(env, writer, logger):
             done_mask = 0.0 if done else 1.0
 
             # save the data into the replay buffer
-            model.memory.insert((obs, action, reward / 100.0, next_obs, done_mask))
+            model.memory.insert((obs, action, reward, next_obs, done_mask))
 
             # record the data
             score += reward
@@ -135,7 +135,7 @@ def trainPPO(env, writer, logger):
                 done_mask = 0.0 if done else 1.0
 
                 # save the data into the replay buffer
-                model.insert((obs, action, reward / 100.0, next_obs, prob_a.item(), done_mask))
+                model.insert((obs, action, reward, next_obs, prob_a.item(), done_mask))
 
                 # record the data
                 score += reward
