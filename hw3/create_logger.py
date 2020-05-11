@@ -26,16 +26,20 @@ def create_logger(root_output_path, config):
         os.makedirs(final_output_path)
 
     file_name = '{}.log'.format(time.strftime('%Y-%m-%d-%H-%M'))
-    logger_path = os.path.join(final_output_path, file_name)
 
-    # return logger, final_output_path
-    return logger_path, final_output_path
+    # head = '%(asctime)-15s %(message)s'
+    head = '%(message)s'
+    logging.basicConfig(filename=os.path.join(final_output_path, file_name), format=head)
+    logger = logging.getLogger()
+    logger.setLevel(logging.WARNING)
+
+    return logger, final_output_path
 
 
 def print_and_log(string, logger):
     print(string)
     if logger:
-        logger.info(string)
+        logger.warning(string)
 
 
 def print_and_write(string, file=None):

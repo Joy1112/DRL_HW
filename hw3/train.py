@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import random
-# import gym
-import gfootball.env as football_env
+import gym
+# import gfootball.env as football_env
 from optparse import OptionParser
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -84,7 +84,7 @@ def trainDDPG(env, writer, logger):
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print_and_write(
+            print_and_log(
                 "episode: {}, training steps: {}, avg score: {:.2f}, critic_loss: {:.5f}, actor_loss: {:.5f}, loss: {:.5f}, buffer size: {}, epsilon:{:.2f}%"
                 .format(i_episode, training_steps, score / cfg.print_interval, epi_critic_loss,
                         epi_actor_loss, epi_loss, model.memory.size(), epsilon * 100), logger)
@@ -102,9 +102,9 @@ def trainDDPG(env, writer, logger):
 
                     test_score += reward
                     obs = next_obs
-            print_and_write('******************Test result******************', logger)
-            print_and_write("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
-            print_and_write('***********************************************', logger)
+            print_and_log('******************Test result******************', logger)
+            print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_log('***********************************************', logger)
 
 
 def trainPPO(env, writer, logger):
@@ -156,7 +156,7 @@ def trainPPO(env, writer, logger):
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print_and_write(
+            print_and_log(
                 "episode: {}, training steps: {}, avg score: {:.2f}, value_loss: {:.5f}, action_loss: {:.5f}, dist_entropy: {:.5f}"
                 .format(i_episode, training_steps, score / cfg.print_interval, value_loss_epoch,
                         action_loss_epoch, dist_entropy_epoch), logger)
@@ -174,9 +174,9 @@ def trainPPO(env, writer, logger):
 
                     test_score += reward
                     obs = next_obs
-            print_and_write('******************Test result******************', logger)
-            print_and_write("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
-            print_and_write('***********************************************', logger)
+            print_and_log('******************Test result******************', logger)
+            print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_log('***********************************************', logger)
 
 
 if __name__ == '__main__':
@@ -201,24 +201,25 @@ if __name__ == '__main__':
     root_output_path = os.path.join(cur_dir, 'output')
     if not os.path.exists(root_output_path):
         os.mkdir(root_output_path)
-    logger_path, final_output_path = create_logger(root_output_path, cfg)
-    logger = open(logger_path, 'w')
+    # logger_path, final_output_path = create_logger(root_output_path, cfg)
+    logger, final_output_path = create_logger(root_output_path, cfg)
+    # logger = open(logger_path, 'w')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
-    print('******************Called with config******************')
-    print(cfg)
-    print('******************************************************')
+    print_and_log('******************Called with config******************', logger)
+    print_and_log(cfg, logger)
+    print_and_log('******************************************************', logger)
 
     # create env
-    # env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
-    env = football_env.create_environment(env_name=cfg.env,
-                                          representation='simple115',
-                                          number_of_left_players_agent_controls=1,
-                                          stacked=False,
-                                          logdir='./output/',
-                                          write_goal_dumps=False,
-                                          write_full_episode_dumps=False,
-                                          render=False)
+    env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
+    # env = football_env.create_environment(env_name=cfg.env,
+    #                                       representation='simple115',
+    #                                       number_of_left_players_agent_controls=1,
+    #                                       stacked=False,
+    #                                       logdir='./output/',
+    #                                       write_goal_dumps=False,
+    #                                       write_full_episode_dumps=False,
+    #                                       render=False)
 
     if cfg.model == 'DDPG':
         cfg.lr_critic = 0.005
