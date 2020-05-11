@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import random
-import gym
-# import gfootball.env as football_env
+# import gym
+import gfootball.env as football_env
 from optparse import OptionParser
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -211,15 +211,15 @@ if __name__ == '__main__':
     print_and_log('******************************************************', logger)
 
     # create env
-    env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
-    # env = football_env.create_environment(env_name=cfg.env,
-    #                                       representation='simple115',
-    #                                       number_of_left_players_agent_controls=1,
-    #                                       stacked=False,
-    #                                       logdir='./output/',
-    #                                       write_goal_dumps=False,
-    #                                       write_full_episode_dumps=False,
-    #                                       render=False)
+    # env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
+    env = football_env.create_environment(env_name=cfg.env,
+                                          representation='simple115',
+                                          number_of_left_players_agent_controls=1,
+                                          stacked=False,
+                                          logdir='./output/',
+                                          write_goal_dumps=False,
+                                          write_full_episode_dumps=False,
+                                          render=False)
 
     if cfg.model == 'DDPG':
         cfg.lr_critic = 0.005
