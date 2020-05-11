@@ -2,8 +2,8 @@ import os
 import numpy as np
 import random
 import json
-# import gym
-import gfootball.env as football_env
+import gym
+# import gfootball.env as football_env
 from optparse import OptionParser
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -202,9 +202,8 @@ if __name__ == '__main__':
     root_output_path = os.path.join(cur_dir, 'output')
     if not os.path.exists(root_output_path):
         os.mkdir(root_output_path)
-    # logger_path, final_output_path = create_logger(root_output_path, cfg)
-    logger, final_output_path = create_logger(root_output_path, cfg)
-    # logger = open(logger_path, 'w')
+    logger_path, final_output_path = create_logger(root_output_path, cfg)
+    logger = open(logger_path, 'w')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
     print('******************Called with config******************')
@@ -212,23 +211,19 @@ if __name__ == '__main__':
     print('******************************************************')
 
     # create env
-    # env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
-    env = football_env.create_environment(env_name=cfg.env,
-                                          representation='simple115',
-                                          number_of_left_players_agent_controls=1,
-                                          stacked=False,
-                                          logdir='./output/',
-                                          write_goal_dumps=False,
-                                          write_full_episode_dumps=False,
-                                          render=False)
+    env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
+    # env = football_env.create_environment(env_name=cfg.env,
+    #                                       representation='simple115',
+    #                                       number_of_left_players_agent_controls=1,
+    #                                       stacked=False,
+    #                                       logdir='./output/',
+    #                                       write_goal_dumps=False,
+    #                                       write_full_episode_dumps=False,
+    #                                       render=False)
 
     if cfg.model == 'DDPG':
         cfg.lr_critic = 0.005
         cfg.lr_actor = 0.0025
-        json_cfg = json.dumps(cfg)
-        json_file = open(os.path.join(final_output_path, 'config.json', 'w'))
-        json_file.write(json_cfg)
-        json_file.close()
         trainDDPG(env, writer, logger)
     elif cfg.model == 'TD3':
         # trainTD3(env, writer, logger)
@@ -239,10 +234,6 @@ if __name__ == '__main__':
         cfg.max_grad_norm = 0.5
         cfg.update_times = 4
         cfg.T_horizon = 32
-        json_cfg = json.dumps(cfg)
-        json_file = open(os.path.join(final_output_path, 'config.json', 'w'))
-        json_file.write(json_cfg)
-        json_file.close()
         trainPPO(env, writer, logger)
 
     env.close()
