@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import random
+import json
 # import gym
 import gfootball.env as football_env
 from optparse import OptionParser
@@ -84,7 +85,7 @@ def trainDDPG(env, writer, logger):
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print_and_log(
+            print_and_write(
                 "episode: {}, training steps: {}, avg score: {:.2f}, critic_loss: {:.5f}, actor_loss: {:.5f}, loss: {:.5f}, buffer size: {}, epsilon:{:.2f}%"
                 .format(i_episode, training_steps, score / cfg.print_interval, epi_critic_loss,
                         epi_actor_loss, epi_loss, model.memory.size(), epsilon * 100), logger)
@@ -102,9 +103,9 @@ def trainDDPG(env, writer, logger):
 
                     test_score += reward
                     obs = next_obs
-            print_and_log('******************Test result******************', logger)
-            print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
-            print_and_log('***********************************************', logger)
+            print_and_write('******************Test result******************', logger)
+            print_and_write("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_write('***********************************************', logger)
 
 
 def trainPPO(env, writer, logger):
@@ -156,7 +157,7 @@ def trainPPO(env, writer, logger):
         writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
 
         if i_episode % cfg.print_interval == 0 and i_episode > 0:
-            print_and_log(
+            print_and_write(
                 "episode: {}, training steps: {}, avg score: {:.2f}, value_loss: {:.5f}, action_loss: {:.5f}, dist_entropy: {:.5f}"
                 .format(i_episode, training_steps, score / cfg.print_interval, value_loss_epoch,
                         action_loss_epoch, dist_entropy_epoch), logger)
@@ -174,9 +175,9 @@ def trainPPO(env, writer, logger):
 
                     test_score += reward
                     obs = next_obs
-            print_and_log('******************Test result******************', logger)
-            print_and_log("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
-            print_and_log('***********************************************', logger)
+            print_and_write('******************Test result******************', logger)
+            print_and_write("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_write('***********************************************', logger)
 
 
 if __name__ == '__main__':
@@ -206,9 +207,9 @@ if __name__ == '__main__':
     # logger = open(logger_path, 'w')
     writer = SummaryWriter(log_dir=os.path.join(final_output_path, 'tb'))
 
-    print_and_log('******************Called with config******************', logger)
-    print_and_log(cfg, logger)
-    print_and_log('******************************************************', logger)
+    print('******************Called with config******************')
+    print(cfg)
+    print('******************************************************')
 
     # create env
     # env = gym.make('CartPole-v0')         # CartPole as a simple discrete task for testing the algorithm
@@ -224,6 +225,10 @@ if __name__ == '__main__':
     if cfg.model == 'DDPG':
         cfg.lr_critic = 0.005
         cfg.lr_actor = 0.0025
+        json_cfg = json.dumps(cfg)
+        json_file = open(os.path.join(final_output_path, 'config.json', 'w'))
+        json_file.write(json_cfg)
+        json_file.close()
         trainDDPG(env, writer, logger)
     elif cfg.model == 'TD3':
         # trainTD3(env, writer, logger)
@@ -234,6 +239,10 @@ if __name__ == '__main__':
         cfg.max_grad_norm = 0.5
         cfg.update_times = 4
         cfg.T_horizon = 32
+        json_cfg = json.dumps(cfg)
+        json_file = open(os.path.join(final_output_path, 'config.json', 'w'))
+        json_file.write(json_cfg)
+        json_file.close()
         trainPPO(env, writer, logger)
 
     env.close()
