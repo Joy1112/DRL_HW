@@ -177,6 +177,6 @@ class PPO():
 
     def sampleAction(self, obs, deterministic=False):
         obs = torch.from_numpy(obs).float().unsqueeze(0)
-        value, action, action_log_probs = self.actor_critic.act(obs, deterministic)
+        value, action, action_log_probs = self.actor_critic.act(obs.to(self.device), deterministic)
 
         return action, action_log_probs
