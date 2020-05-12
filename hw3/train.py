@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from ddpg import OrnsteinUhlenbeckNoise, DDPG
 from ppo import PPO
+from td3 import TD3
 from create_logger import create_logger, print_and_log, print_and_write
 
 
@@ -89,6 +90,81 @@ def trainDDPG(env, writer, logger):
                 "episode: {}, training steps: {}, avg score: {:.2f}, critic_loss: {:.5f}, actor_loss: {:.5f}, loss: {:.5f}, buffer size: {}, epsilon:{:.2f}%"
                 .format(i_episode, training_steps, score / cfg.print_interval, epi_critic_loss,
                         epi_actor_loss, epi_loss, model.memory.size(), epsilon * 100), logger)
+            score = 0.0
+
+        # test the model with epsilon=0.0
+        if i_episode % cfg.test_freq == 0 and i_episode > 0:
+            test_score = 0.0
+            for t in range(cfg.test_episodes):
+                obs = env.reset()
+                done = False
+                while not done:
+                    action = model.sampleAction(obs)
+                    next_obs, reward, done, _ = env.step(action)
+
+                    test_score += reward
+                    obs = next_obs
+            print_and_write('******************Test result******************', logger)
+            print_and_write("avg score: {:.2f}".format(test_score / cfg.test_episodes), logger)
+            print_and_write('***********************************************', logger)
+
+
+def trainTD3(env, writer, logger):
+    # create model
+    model = TD3(num_actions=env.action_space.n,
+                gamma=cfg.gamma,
+                tau=cfg.tau,
+                buffer_size=cfg.buffer_size,
+                batch_size=cfg.batch_size,
+                lr_critic=cfg.lr_critic,
+                lr_actor=cfg.lr_actor,
+                update_times=cfg.update_times,
+                input_type='vector',
+                input_feature=env.observation_space.shape[0],
+                device=cfg.device)
+
+    # ou_noise = OrnsteinUhlenbeckNoise(mu=np.zeros(1))
+
+    score = 0.0
+    training_steps = 0
+    for i_episode in range(cfg.max_episodes):
+        # change the probability of random action according to the training process
+        epsilon = max(cfg.min_epsilon, cfg.max_epsilon - 0.01 * (i_episode / cfg.epsilon_decay))
+        obs = env.reset()
+        steps = 0
+        epi_reward = 0.0
+        done = False
+        while not done:
+            action = model.sampleAction(obs, epsilon)
+            next_obs, reward, done, _ = env.step(action)
+            done_mask = 0.0 if done else 1.0
+
+            # save the data into the replay buffer
+            model.memory.insert((obs, action, reward, next_obs, done_mask))
+
+            # record the data
+            score += reward
+            training_steps += 1
+            steps += 1
+            epi_reward += reward
+
+            obs = next_obs
+
+        # learn the model according to the learning frequency.
+        if i_episode >= cfg.learning_start and i_episode % cfg.learning_freq == 0:
+            epi_critic_1_loss, epi_critic_2_loss, epi_actor_loss = model.learn()
+            writer.add_scalar('critic_1_loss-episode', epi_critic_1_loss, global_step=i_episode)
+            writer.add_scalar('critic_2_loss-episode', epi_critic_2_loss, global_step=i_episode)
+            writer.add_scalar('actor_loss-episode', epi_actor_loss, global_step=i_episode)
+
+        writer.add_scalar('steps-episode', steps, global_step=i_episode)
+        writer.add_scalar('rewards-episode', epi_reward, global_step=i_episode)
+
+        if i_episode % cfg.print_interval == 0 and i_episode > 0:
+            print_and_write(
+                "episode: {}, training steps: {}, avg score: {:.2f}, critic_1_loss: {:.5f}, critic_2_loss: {:.5f}, actor_loss: {:.5f}, buffer size: {}, epsilon:{:.2f}%"
+                .format(i_episode, training_steps, score / cfg.print_interval, epi_critic_1_loss,
+                        epi_critic_2_loss, epi_actor_loss, model.memory.size(), epsilon * 100), logger)
             score = 0.0
 
         # test the model with epsilon=0.0
@@ -188,6 +264,8 @@ if __name__ == '__main__':
     cfg.test_episodes = 100
     cfg.batch_size = 32
     cfg.learning_freq = 1
+    cfg.lr_critic = 0.005
+    cfg.lr_actor = 0.0025
 
     # specific config
     if cfg.env == 'academy_empty_goal':
@@ -222,12 +300,9 @@ if __name__ == '__main__':
                                           render=False)
 
     if cfg.model == 'DDPG':
-        cfg.lr_critic = 0.005
-        cfg.lr_actor = 0.0025
         trainDDPG(env, writer, logger)
     elif cfg.model == 'TD3':
-        # trainTD3(env, writer, logger)
-        pass
+        trainTD3(env, writer, logger)
     elif cfg.model == 'PPO':
         cfg.value_loss_coef = 0.5
         cfg.entropy_coef = 0.01

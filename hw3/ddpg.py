@@ -191,8 +191,6 @@ class DDPG():
         # self.ou_noise = OrnsteinUhlenbeckNoise(mu=np.zeros(self.actor.base.num_outputs))
 
     def _createNets(self):
-        # self.critic = QNet(self.action_dim, self.input_type, self.input_feature, self.input_img_size).to(self.device)
-        # self.critic_target = QNet(self.action_dim, self.input_type, self.input_feature, self.input_img_size).to(self.device)
         self.critic = QNet(self.num_actions, self.input_type, self.input_feature, self.input_img_size).to(self.device)
         self.critic_target = QNet(self.num_actions, self.input_type, self.input_feature, self.input_img_size).to(self.device)
         self.critic_target.load_state_dict(self.critic.state_dict())
@@ -220,23 +218,19 @@ class DDPG():
         return state_batch, action_batch, reward_batch, next_state_batch, done_mask_batch
 
     def _calcCriticLoss(self, state_batch, action_batch, reward_batch, next_state_batch):
-        # next_action_batch = self.actor_target(next_state_batch).argmax(axis=1).unsqueeze(-1)
-        # target = reward_batch + self.gamma * self.critic_target(next_state_batch, next_action_batch)
         target = reward_batch + self.gamma * self.critic_target(next_state_batch, self.actor_target(next_state_batch))
         action_batch_one_hot = F.one_hot(action_batch, num_classes=self.num_actions).squeeze(1)
         loss = F.mse_loss(self.critic(state_batch, action_batch_one_hot), target.detach())
         return loss
 
     def _calcActorLoss(self, state_batch):
-        # current_action_batch = self.actor(state_batch).argmax(axis=1).unsqueeze(-1)
-        # loss = - self.critic(state_batch, current_action_batch).mean()
         loss = -self.critic(state_batch, self.actor(state_batch)).mean()
         return loss
 
     def sampleAction(self, obs, epsilon=0.0):
         obs = torch.from_numpy(obs).float().unsqueeze(0)
         # noise = torch.from_numpy(self.ou_noise()).float() * epsilon
-        action_one_hot = self.actor(obs.to(self.device))
+        action_one_hot = self.actor(obs.to(self.device)).detach()
         action = action_one_hot.argmax().item() if random.random() >= epsilon else random.randint(0, self.num_actions - 1)
 
         return action
